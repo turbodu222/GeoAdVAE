@@ -1,7 +1,3 @@
-"""
-Trainer class for model training with configurable loss scheduling.
-This code is based on https://github.com/NVlabs/MUNIT.
-"""
 from networks import Discriminator, Classifier
 from networks import VAEGen_MORE_LAYERS as VAEGen
 from utils import weights_init, get_model_list, get_scheduler
