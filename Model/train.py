@@ -1,7 +1,3 @@
-"""
-Main functionality for starting training with configurable loss scheduling.
-This code is based on https://github.com/NVlabs/MUNIT.
-"""
 import torch
 
 from utils import prepare_sub_folder, write_loss, get_config, save_plots, \
