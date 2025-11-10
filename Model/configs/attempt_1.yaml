@@ -1,0 +1,89 @@
+# Complete Improved Model Configuration with Configurable Loss Scheduling
+# Updated attempt_1.yaml
+
+# Training schedule and logging
+snapshot_save_iter: 200
+log_iter: 50                    # More frequent logging for better monitoring
+max_iter: 2000                  # Increased total iterations
+batch_size: 32                  # Larger batch size for stable training
+log_data: True
+normalize_data: True
+
+# Configurable Training Phase Durations
+phase_durations:
+  phase_1: 200                  # Phase 1 duration (iterations)
+  phase_2: 400                  # Phase 2 duration (iterations)
+  phase_3: 400                  # Phase 3 duration (iterations)
+
+# Configurable Loss Scheduling
+# Specify which phase each loss starts from (1, 2, or 3)
+loss_schedule:
+  kl_loss: 1                    # KL divergence loss starts from phase 1
+  recon_loss: 1                 # Reconstruction loss starts from phase 1  
+  prior_loss: 1                 # Prior loss starts from phase 1 (CHANGED from 3!)
+  gan_loss: 2                   # GAN adversarial loss starts from phase 2
+  gw_loss: 3                    # Gromov-Wasserstein loss starts from phase 3
+
+# Optimizer settings
+weight_decay: 0.0001
+beta1: 0.5
+beta2: 0.999
+init: kaiming
+lr: 0.0002                      # Slightly increased learning rate
+lr_policy: step
+step_size: 800                  # Learning rate decay step
+gamma: 0.8                      # Learning rate decay factor
+
+# Loss weights - rebalanced for better training
+gan_w: 2.0                      # Increased GAN weight for stronger adversarial training
+recon_x_w: 5.0                  # Strong reconstruction weight for stability
+gw_w: 1.0                       # Moderate GW weight for structural alignment
+kl_w: 0.1                      # Moderate KL weight to prevent posterior collapse
+lambda_p: 1.0                   # Increased prior loss weight for better semantic alignment from phase 1
+debug_gan_training: True
+
+# Training frequency control
+num_disc: 2                     # Update discriminator 2 times per generator update
+num_gen: 1                      # Update generator 1 time
+
+# Prior information configuration - enhanced parameters
+prior_matrix_path: "/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/scala/Corr_matrix.csv"
+epsilon: 1e-6                   # Numerical stability constant
+n_gene_clusters: 10             # Number of gene expression clusters
+n_morphology_clusters: 8        # Number of morphology clusters
+prior_temperature: 0.07         # Temperature scaling for prior loss (lower = sharper)
+prior_loss_warmup: 200          # Warmup iterations for prior loss
+
+# Visualization configuration 
+visualization:
+  method: 'umap'                # Visualization method
+  umap_n_neighbors: 15          # UMAP hyperparameters
+  umap_min_dist: 0.1
+  umap_metric: 'euclidean'
+  
+# Gromov-Wasserstein loss configuration 
+gw_mode: 'global'               # Global GW for better alignment
+gw_group_size: 16               # Group size for groupwise GW (not used in global mode)
+
+# Enhanced model architecture - increased capacity
+shared_layer: False              # Share parameters between modalities
+gen:
+  dim: 256                      # Increased hidden dimension for better representation
+  latent: 16                    # Increased latent space dimension
+  activ: relu                   # Activation function
+
+dis:
+  dim: 128                      # Increased discriminator capacity
+  norm: none                    # Normalization type (none/batch/layer)
+  activ: lrelu                  # LeakyReLU activation
+  use_sigmoid: True             # Use sigmoid output for LSGAN
+  gan_type: 'lsgan'             # GAN loss type (lsgan/nsgan/wgan)
+  label_smoothing: 0.1          # Label smoothing for regularization
+  dropout_rate: 0.3             # Dropout rate for regularization
+  use_gradient_penalty: False   # Gradient penalty for WGAN-GP
+  gp_lambda: 10.0               # Gradient penalty weight
+
+# Input dimensions
+input_dim_a: 645                # Morphology data dimension
+input_dim_b: 2000               # Gene expression data dimension
+
