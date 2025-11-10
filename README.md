@@ -86,7 +86,7 @@ conda list --export > environment.txt
 
 If you use this codebase in your work, please cite:
 
-> Du, J. & Lin, K. Z. **GeoAdVAE: Cross-Modal Adversarial Autoencoder for Single-Cell Morphology and Transcriptomics Integration**. (2025, under review).
+> Du, J. & Lin, K. Z. **Integrating morphology and gene expression in unpaired single-cell data using GeoAdVAE**. *Preprint*, 2025.
 
 ---
 
