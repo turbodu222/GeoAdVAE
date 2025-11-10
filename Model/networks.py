@@ -1,7 +1,3 @@
-"""
-Defines models
-This code is based on https://github.com/NVlabs/MUNIT
-"""
 from torch import nn
 from torch.autograd import Variable
 import torch
