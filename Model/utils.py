@@ -1,8 +1,3 @@
-"""
-Utils for data loading and model training
-This code is based on https://github.com/NVlabs/MUNIT
-"""
-
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 from torch.optim import lr_scheduler
