@@ -3,6 +3,10 @@
 **GeoAdVAE** (Geometric Adversarial Variational AutoEncoder) is a cross-modal deep learning framework for integrating **single-cell morphology** and **gene expression** data.  
 This repository contains the implementation, preprocessing scripts, and configuration files used in the corresponding manuscript.
 
+<p align="center">
+  <img src="Figures/geoAdvAE.png" alt="GeoAdVAE architecture overview" width="700">
+</p>
+
 ---
 
 ## 🧩 Environment & Dependencies
