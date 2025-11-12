@@ -1,0 +1,101 @@
+# Configuration for unpaired training with unequal sample sizes
+# Morphology: 98 samples, Gene Expression: 30k samples
+
+# Data paths
+morphology_path: "/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/5xFAD/gw_dist.csv"
+gene_expression_path: "/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/5xFAD/gex_matrix.csv"
+morpho_cluster_path: "/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/5xFAD/Cluster_id.csv"
+gex_cluster_path: "/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/5xFAD/microgliaClusterID.csv"
+prior_matrix_path: "/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/scala/Corr_matrix.csv"
+
+# Training configuration for unpaired data
+max_epochs: 10                  # Number of complete passes through gene expression data
+batch_size: 32                  # Batch size for both modalities
+max_iter: 9370                  # max_epochs * ceil(30000/32) = 10 * 937
+
+# Training schedule and logging
+snapshot_save_iter: 500         # Save checkpoint every 500 iterations
+log_iter: 50                    # Log every 50 iterations
+log_data: True
+normalize_data: True
+
+# Configurable Training Phase Durations
+phase_durations:
+  phase_1: 1000                 # Phase 1: Reconstruction + KL + Prior
+  phase_2: 3000                 # Phase 2: + GAN adversarial training
+  phase_3: 5370                 # Phase 3: + Gromov-Wasserstein alignment
+
+# Configurable Loss Scheduling
+loss_schedule:
+  kl_loss: 1                    # KL divergence loss starts from phase 1
+  recon_loss: 1                 # Reconstruction loss starts from phase 1  
+  prior_loss: 1                 # Prior loss starts from phase 1
+  gan_loss: 2                   # GAN adversarial loss starts from phase 2
+  gw_loss: 3                    # Gromov-Wasserstein loss starts from phase 3
+
+# Optimizer settings
+weight_decay: 0.0001
+beta1: 0.5
+beta2: 0.999
+init: kaiming
+lr: 0.0002
+lr_policy: step
+step_size: 2000                 # Decay learning rate every 2000 iterations
+gamma: 0.8                      # Learning rate decay factor
+
+# Loss weights - can set to 0 to disable
+gan_w: 50.0                      # Set to 0 to disable GAN loss completely
+recon_x_w: 5.0                  # Strong reconstruction weight
+gw_w: 2.0                       # Gromov-Wasserstein weight
+kl_w: 0.1                       # KL weight
+lambda_p: 0                   # Prior loss weight (increased for unpaired setting)
+debug_gan_training: True       # Disable debug since GAN is disabled
+
+# Training frequency control
+num_disc: 1                     # No discriminator updates since gan_w = 0
+num_gen: 1                      # Generator updates per iteration
+
+# Prior information configuration
+epsilon: 1e-6                   # Numerical stability
+n_gene_clusters: 10             # Number of gene expression clusters
+n_morphology_clusters: 8        # Number of morphology clusters
+prior_temperature: 0.05         # Lower temperature for sharper alignment
+prior_loss_warmup: 500          # Warmup iterations for prior loss
+
+# Visualization configuration 
+visualization:
+  method: 'umap'                # Changed from 'pca' to 'umap'
+  umap_n_neighbors: 15          # UMAP parameters
+  umap_min_dist: 0.1
+  umap_metric: 'euclidean'
+  umap_n_epochs: 500            # Increased for better convergence
+  
+# Gromov-Wasserstein configuration 
+gw_mode: 'groupwise'            # Use groupwise for computational efficiency with large data
+gw_group_size: 32               # Process GW in groups of 32 samples
+
+# Model architecture
+shared_layer: False             # No shared parameters between modalities
+gen:
+  dim: 256                      # Hidden dimension
+  latent: 16                    # Latent dimension
+  activ: relu
+
+dis:
+  dim: 128                      # Discriminator capacity (not used if gan_w = 0)
+  norm: none
+  activ: lrelu
+  use_sigmoid: True
+  gan_type: 'lsgan'
+  label_smoothing: 0.1
+  dropout_rate: 0.3
+  use_gradient_penalty: False
+  gp_lambda: 10.0
+
+# Input dimensions
+input_dim_a: 98                # Morphology dimension (CAJAL embedding)
+input_dim_b: 2008               # Gene expression dimension
+
+# Sampling strategy for unpaired training
+morpho_sampling: 'with_replacement'    # Sample morphology with replacement
+gex_sampling: 'sequential'              # Iterate through gene expression sequentially
