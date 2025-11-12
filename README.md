@@ -4,7 +4,7 @@
 This repository contains the implementation, preprocessing scripts, and configuration files used in the corresponding manuscript.
 
 <p align="center">
-  <img src="Figures/geoAdvAE.png" alt="GeoAdVAE architecture overview" width="700">
+  <img src="Figures/geoAdvAE.png" alt="GeoAdVAE architecture overview" width="500">
 </p>
 
 ---
