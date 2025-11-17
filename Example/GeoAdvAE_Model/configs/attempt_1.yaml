@@ -1,0 +1,86 @@
+# Simplified Configuration for Simulation Data (3D gene expression + 3000D gw data)
+# attempt_1_simulation.yaml
+
+# Training schedule and logging - reduced for simulation
+snapshot_save_iter: 100         # More frequent saves for quick iterations
+log_iter: 25                    # Frequent logging to monitor small model
+max_iter: 2000                  # Reduced iterations for simulation
+batch_size: 150                  # Smaller batch size for simulation
+log_data: True
+normalize_data: True
+
+# Evaluation settings
+filter_low_quality: True        # Whether to exclude 'low quality' samples from accuracy calculation
+
+# Simplified Training Phase Durations - shorter phases
+phase_durations:
+  phase_1: 100                  # Shorter reconstruction phase
+  phase_2: 200                  # Shorter adversarial phase  
+  phase_3: 200                  # Shorter final phase
+
+# Configurable Loss Scheduling - same structure but optimized weights
+loss_schedule:
+  kl_loss: 1                    # KL divergence loss starts from phase 1
+  recon_loss: 1                 # Reconstruction loss starts from phase 1  
+  prior_loss: 1                 # Prior loss starts from phase 1
+  gan_loss: 2                   # GAN adversarial loss starts from phase 2
+  gw_loss: 3                    # Gromov-Wasserstein loss starts from phase 3
+
+# Optimizer settings - more aggressive for quick convergence
+weight_decay: 0.0001
+beta1: 0.5
+beta2: 0.999
+init: kaiming
+lr: 0.001                       # Higher learning rate for simulation
+lr_policy: step
+step_size: 400                  # More frequent LR decay
+gamma: 0.5                      # More aggressive decay
+
+# Loss weights - rebalanced for small simulation data
+gan_w: 10                      # Reduced GAN weight to prevent instability
+recon_x_w: 5                # High reconstruction weight for stability
+gw_w: 3                      # Reduced GW weight for simple data
+kl_w: 0.1                     # Very small KL weight to prevent collapse
+lambda_p: 21                  # Moderate prior loss weight
+debug_gan_training: True
+
+# Training frequency control - more conservative for small model
+num_disc: 2                     # Single discriminator update per generator
+num_gen: 1                      # Single generator update
+
+# Prior information configuration - adapted for simulation
+prior_matrix_path: "/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/Simulation_example/Corr_matrix.csv"  # Update this path
+epsilon: 1e-6                   
+n_gene_clusters: 3              # Reduced for simulation
+n_morphology_clusters: 3        # Reduced for simulation  
+prior_temperature: 0.1          # Higher temperature for softer alignment
+prior_loss_warmup: 20           # Shorter warmup
+
+# Visualization configuration 
+visualization:
+  method: 'pca'                 # PCA is better for small latent spaces
+  umap_n_neighbors: 5           # Reduced for small data
+  umap_min_dist: 0.3
+  umap_metric: 'euclidean'
+  
+# Gromov-Wasserstein loss configuration 
+gw_mode: 'Global'            # Groupwise better for small batches
+gw_group_size: 32                # Small group size for simulation
+
+# Simplified model architecture - much smaller networks
+shared_layer: True
+gen:
+  dim: 3
+  latent: 2
+  activ: relu
+
+dis:
+  dim: 3
+  norm: none
+  activ: lrelu
+  use_sigmoid: True         
+  gan_type: 'lsgan'           # GAN type: 'lsgan', 'nsgan', or 'wgan'
+  label_smoothing: 0.1        # Prevent overfitting by smoothing labels
+
+input_dim_a: 1200
+input_dim_b: 3
