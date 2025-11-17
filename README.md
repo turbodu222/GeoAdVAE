@@ -90,7 +90,7 @@ conda list --export > environment.txt
 
 ### 📂 Example Implementation
 
-We provide a complete example in the **`Example/`** folder using simulated data with 3 cell type clusters (600, 400, and 200 samples respectively).
+We provide a complete example in the **`Examples/`** folder using simulated data with 3 cell type clusters (600, 400, and 200 samples respectively).
 
 #### **Step 1: Configure Data Paths**
 
