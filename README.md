@@ -104,9 +104,9 @@ DATA_DIR = "{YOUR_DATA_PATH}"  # e.g., "./Example/ExampleData"
 
 os.environ['MORPHOLOGY_PATH'] = f"{DATA_DIR}/gw_dist.csv"
 os.environ['GENE_EXPRESSION_PATH'] = f"{DATA_DIR}/gene_expression.csv"
-os.environ['RNA_FAMILY_PATH'] = f"{DATA_DIR}/cluster_label.csv"
-os.environ['MORPHO_CLUSTER_PATH'] = f"{DATA_DIR}/cluster_label.csv"
-os.environ['GEX_CLUSTER_PATH'] = f"{DATA_DIR}/cluster_label.csv"
+os.environ['RNA_FAMILY_PATH'] = f"{DATA_DIR}/cluster_label_RNA.csv"
+os.environ['MORPHO_CLUSTER_PATH'] = f"{DATA_DIR}/cluster_label_Morpho.csv"
+os.environ['GEX_CLUSTER_PATH'] = f"{DATA_DIR}/cluster_label_GEX.csv"
 os.environ['PRIOR_MATRIX_PATH'] = f"{DATA_DIR}/Corr_matrix.csv"
 
 print("✓ Data paths configured")
