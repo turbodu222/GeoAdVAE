@@ -85,6 +85,57 @@ conda list --export > environment.txt
 
 ---
 
+---
+
+## 🚀 Quick Start Example
+
+### 📂 Example Implementation
+
+We provide a complete example in the **`Example/`** folder using simulated data with 3 cell type clusters (600, 400, and 200 samples respectively).
+
+#### **Step 1: Configure Data Paths**
+
+Set the paths to your input data files:
+```python
+import os
+
+# ========== Set Data Paths ==========
+# Change this to your data directory
+DATA_DIR = "{YOUR_DATA_PATH}"  # e.g., "./Example/ExampleData"
+
+os.environ['MORPHOLOGY_PATH'] = f"{DATA_DIR}/gw_dist.csv"
+os.environ['GENE_EXPRESSION_PATH'] = f"{DATA_DIR}/gene_expression.csv"
+os.environ['RNA_FAMILY_PATH'] = f"{DATA_DIR}/cluster_label.csv"
+os.environ['MORPHO_CLUSTER_PATH'] = f"{DATA_DIR}/cluster_label.csv"
+os.environ['GEX_CLUSTER_PATH'] = f"{DATA_DIR}/cluster_label.csv"
+os.environ['PRIOR_MATRIX_PATH'] = f"{DATA_DIR}/Corr_matrix.csv"
+
+print("✓ Data paths configured")
+```
+
+#### **Step 2: Run Training**
+```python
+from IPython.display import Image, display
+
+SEED = 42
+CONFIG = "{YOUR_MODEL_PATH}/configs/attempt_1.yaml"
+OUTPUT = "{YOUR_OUTPUT_PATH}"
+
+# Run training
+!python {YOUR_MODEL_PATH}/train.py --config {CONFIG} --output_path {OUTPUT} --seed {SEED}
+
+# Display results
+display(Image(filename=f'{OUTPUT}/outputs/attempt_1/images/_combined_final.png', width=700))
+
+print("\n✓ Training completed!")
+```
+
+**Expected Output:**
+- Cell Type Accuracy metrics
+- Integrated latent space visualization
+
+---
+
 
 ## 📚 Citation
 
