@@ -85,7 +85,6 @@ conda list --export > environment.txt
 
 ---
 
----
 
 ## 🚀 Quick Start Example
 
