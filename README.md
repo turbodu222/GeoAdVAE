@@ -116,7 +116,6 @@ print("✓ Data paths configured")
 ```python
 from IPython.display import Image, display
 
-SEED = 42
 CONFIG = "{YOUR_MODEL_PATH}/configs/attempt_1.yaml"
 OUTPUT = "{YOUR_OUTPUT_PATH}"
 
