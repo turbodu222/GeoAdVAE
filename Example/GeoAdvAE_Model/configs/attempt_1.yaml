@@ -49,7 +49,7 @@ num_disc: 2                     # Single discriminator update per generator
 num_gen: 1                      # Single generator update
 
 # Prior information configuration - adapted for simulation
-prior_matrix_path: "/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/Simulation_example/Corr_matrix.csv"  # Update this path
+prior_matrix_path: "FILEPATHTO/Corr_matrix.csv"  # Update this path
 epsilon: 1e-6                   
 n_gene_clusters: 3              # Reduced for simulation
 n_morphology_clusters: 3        # Reduced for simulation  
