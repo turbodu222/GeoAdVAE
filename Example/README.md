@@ -8,3 +8,5 @@ Since this is minimalistic simulation, some of the clustering `.csv` files are n
 - `GEX_CLUSTER_PATH`: This is a broad clustering of cells based on GEX.
 - `MORPHO_CLUSTER_PATH`: This is a broad clustering of the cells based on morphology.
 - `RNA_FAMILY_PATH`: This is the "true" cell-type label, used only for the 1-NN accuracy measure. This is not used in the training of GeoAdvAE itself, but only used for model diagnostics.
+
+Both ``GEX_CLUSTER_PATH` and `MORPHO_CLUSTER_PATH` are the clustering assignments used in the correspondence matrix in `Corr_matrix.csv`.
