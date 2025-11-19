@@ -195,14 +195,19 @@ class CrossModalDataset(torch.utils.data.Dataset):
         """
         Returns a sample containing all modalities and labels
         """
-        return {
+        item = {
             'morpho_data': self.morpho_data[idx],
             'gex_data': self.gex_data[idx],
             'morpho_cluster': self.morpho_cluster_labels[idx],
             'gex_cluster': self.gex_cluster_labels[idx],
-            'index': idx,
-            'rna_family': self.rna_family_labels[idx] if self.rna_family_labels is not None else None
+            'index': idx
         }
+        
+        # Only add rna_family if it exists (avoid None in batch)
+        if self.rna_family_labels is not None:
+            item['rna_family'] = self.rna_family_labels[idx]
+        
+        return item
     
     def get_full_data(self, device='cuda'):
         """Get all data as tensors for full-batch operations"""
