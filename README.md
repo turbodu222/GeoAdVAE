@@ -152,4 +152,4 @@ See the [`LICENSE`](./LICENSE) file for details.
 
 ## ✉️ Contact
 
-For questions or issues related to this code, please feel free to open a GitHub issue or contact the author(s).
+For questions or issues related to this code, please feel free to open a GitHub issue or contact the author(s): Turbo Du (turbodu@uw.edu) and Kevin Lin (kzlin@uw.edu)
