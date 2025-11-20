@@ -17,26 +17,28 @@ class CrossModalDataset(torch.utils.data.Dataset):
                  gex_cluster_path=None,
                  prior_matrix_path=None):
         
-        # Read paths from environment variables if not provided
-        # This allows setting paths in notebook before running train.py
-        if morphology_path is None:
-            morphology_path = os.environ.get('MORPHOLOGY_PATH', 
-                "/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/Simulation_example/gw_dist.csv")
-        if gene_expression_path is None:
-            gene_expression_path = os.environ.get('GENE_EXPRESSION_PATH',
-                "/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/Simulation_example/gene_expression.csv")
-        if rna_family_path is None:
-            rna_family_path = os.environ.get('RNA_FAMILY_PATH',
-                "/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/Simulation_example/cluster_label.csv")
-        if morpho_cluster_path is None:
-            morpho_cluster_path = os.environ.get('MORPHO_CLUSTER_PATH',
-                "/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/Simulation_example/cluster_label.csv")
-        if gex_cluster_path is None:
-            gex_cluster_path = os.environ.get('GEX_CLUSTER_PATH',
-                "/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/Simulation_example/cluster_label.csv")
-        if prior_matrix_path is None:
-            prior_matrix_path = os.environ.get('PRIOR_MATRIX_PATH',
-                "/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/Simulation_example/Corr_matrix.csv")
+        # Read paths from environment variables (required)
+        morphology_path = morphology_path or os.environ.get('MORPHOLOGY_PATH')
+        gene_expression_path = gene_expression_path or os.environ.get('GENE_EXPRESSION_PATH')
+        rna_family_path = rna_family_path or os.environ.get('RNA_FAMILY_PATH')
+        morpho_cluster_path = morpho_cluster_path or os.environ.get('MORPHO_CLUSTER_PATH')
+        gex_cluster_path = gex_cluster_path or os.environ.get('GEX_CLUSTER_PATH')
+        prior_matrix_path = prior_matrix_path or os.environ.get('PRIOR_MATRIX_PATH')
+        
+        # Check all paths are provided
+        required_paths = {
+            'MORPHOLOGY_PATH': morphology_path,
+            'GENE_EXPRESSION_PATH': gene_expression_path,
+            'RNA_FAMILY_PATH': rna_family_path,
+            'MORPHO_CLUSTER_PATH': morpho_cluster_path,
+            'GEX_CLUSTER_PATH': gex_cluster_path,
+            'PRIOR_MATRIX_PATH': prior_matrix_path
+        }
+        
+        missing = [name for name, path in required_paths.items() if path is None]
+        if missing:
+            raise ValueError(f"Missing required data paths: {', '.join(missing)}. "
+                           f"Please set these environment variables before running.")
         
         print("Loading cross-modal dataset...")
         
