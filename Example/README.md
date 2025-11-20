@@ -7,6 +7,6 @@ To run the code, please make sure to set the following paths:
 Since this is minimalistic simulation, some of the clustering `.csv` files are not immediately discernible. Here is a brief description of the three clustering `.csv` files and their role in a typical usage of GeoAdvAE run:
 - `GEX_CLUSTER_PATH`: This is a broad clustering of cells based on GEX.
 - `MORPHO_CLUSTER_PATH`: This is a broad clustering of the cells based on morphology.
-- `RNA_FAMILY_PATH`: This is the "true" cell-type label, used only for the 1-NN accuracy measure. This is not used in the training of GeoAdvAE itself, but only used for model diagnostics.
+- `RNA_FAMILY_PATH`: This is the "true" cell-type label, used only for the 1-NN accuracy measure. This is not used in the training of GeoAdvAE itself, but only used for model diagnostics. If you do not have "true" labels, you can set this clustering file (one label per cell) to be anything arbitrary, because this `RNA_FAMILY_PATH` is primarily only useful as a model diagnostics where the "true" cell-type label is known.
 
-Both ``GEX_CLUSTER_PATH` and `MORPHO_CLUSTER_PATH` are the clustering assignments used in the correspondence matrix in `Corr_matrix.csv`.
+Both `GEX_CLUSTER_PATH` and `MORPHO_CLUSTER_PATH` are the clustering assignments used in the correspondence matrix in `Corr_matrix.csv`.
