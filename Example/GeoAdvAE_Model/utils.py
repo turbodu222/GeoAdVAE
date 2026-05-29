@@ -1,3 +1,8 @@
+"""
+Utils for data loading and model training
+This code is based on https://github.com/NVlabs/MUNIT
+"""
+
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 from torch.optim import lr_scheduler
@@ -953,47 +958,6 @@ def get_cluster_assignments(latent_representations, n_clusters, method='kmeans')
 
 
 
-def generate_color_pairs_for_simulation(unique_labels):
-    """
-    Generate color pairs for simulation data using Red, Green, Blue scheme
-    Returns dictionary mapping labels to (light_color, dark_color) tuples
-    For morphology: lighter shades, triangles
-    For gene expression: darker shades, circles
-    """
-    import matplotlib.colors as mcolors
-    import numpy as np
-    
-    # Define RGB color scheme for simulation (cluster 0, 1, 2)
-    # Darker shades for GEX, lighter shades for Morphology
-    simulation_colors = {
-        0: ('#FF6B6B', '#FFCCCC'),  # (darker red, lighter red)
-        1: ('#4CAF50', '#C8E6C9'),  # (darker green, lighter green)
-        2: ('#2196F3', '#BBDEFB'),  # (darker blue, lighter blue)
-    }
-    
-    color_pairs = {}
-    
-    for label in unique_labels:
-        # Try to convert label to int for simulation data
-        try:
-            label_int = int(label)
-            if label_int in simulation_colors:
-                dark_color, light_color = simulation_colors[label_int]
-            else:
-                # Fallback for unexpected cluster numbers
-                dark_color = '#808080'  # gray
-                light_color = '#D3D3D3'  # light gray
-        except (ValueError, TypeError):
-            # If label is not numeric, use default colors
-            dark_color = '#808080'
-            light_color = '#D3D3D3'
-        
-        # Return as (light_color, dark_color) - light for morphology, dark for GEX
-        color_pairs[label] = (light_color, dark_color)
-    
-    return color_pairs
-
-
 def generate_color_pairs_with_celltype_mapping(unique_labels):
     """
     Generate color pairs with specific mapping for known cell types
@@ -1080,8 +1044,7 @@ def apply_umap_reduction(data, n_neighbors=15, min_dist=0.1, metric='euclidean')
 
 
 def plot_latent_visualization_with_celltype_colors(a, b, outname1=None, outname2=None, outname=None, 
-                                                   method='pca', umap_params=None, scale=True, 
-                                                   use_simulation_colors=False, dataset=None):
+                                                   method='pca', umap_params=None, scale=True):
     """
     Plotting function with specific cell type colors for UMAP visualization
     Shows ALL samples including 'low quality' in visualization
@@ -1095,24 +1058,14 @@ def plot_latent_visualization_with_celltype_colors(a, b, outname1=None, outname2
         method: 'pca' or 'umap'
         umap_params: dict with UMAP parameters
         scale: Whether to scale data before dimensionality reduction
-        use_simulation_colors: If True, use red-green-blue color scheme for simulation data
-        dataset: Dataset object to get cluster labels from
     """
     import matplotlib.pyplot as plt
     from sklearn.decomposition import PCA
     from sklearn.preprocessing import StandardScaler
     import numpy as np
     
-    # Get cluster labels - prioritize dataset labels for simulation
-    if dataset is not None and hasattr(dataset, 'gex_cluster_labels'):
-        # Use data-driven cluster labels from dataset
-        labels = dataset.gex_cluster_labels.cpu().numpy()
-        print(f"Using cluster labels from dataset")
-        use_simulation_colors = True  # Automatically use simulation colors for cluster data
-    else:
-        # Load RNA family labels for patch-seq data
-        labels = load_rna_labels()
-        print(f"Using RNA family labels")
+    # Load celltype labels
+    labels = load_rna_labels()
     
     # Automatically detect the number of cells
     n_cells_a = len(a)  # Morphology
@@ -1150,50 +1103,25 @@ def plot_latent_visualization_with_celltype_colors(a, b, outname1=None, outname2
     # comp[:n_cells] = gene expression coordinates
     # comp[n_cells:] = morphology coordinates
     
-    # Export coordinates to CSV files
-    if outname:
-        # Extract directory from outname
-        import os
-        output_dir = os.path.dirname(outname)
-        base_name = os.path.basename(outname).replace('.png', '')
-        
-        # Save gene expression coordinates
-        gex_coords_file = os.path.join(output_dir, f"{base_name}_gex_coordinates.csv")
-        gex_df = pd.DataFrame(comp[:n_cells], columns=[f'{method.upper()}_1', f'{method.upper()}_2'])
-        if labels is not None:
-            gex_df['cluster'] = labels[:n_cells]
-        gex_df.to_csv(gex_coords_file, index=False)
-        print(f"Saved GEX {method.upper()} coordinates to: {gex_coords_file}")
-        
-        # Save morphology coordinates
-        morph_coords_file = os.path.join(output_dir, f"{base_name}_morph_coordinates.csv")
-        morph_df = pd.DataFrame(comp[n_cells:], columns=[f'{method.upper()}_1', f'{method.upper()}_2'])
-        if labels is not None:
-            morph_df['cluster'] = labels[:n_cells]
-        morph_df.to_csv(morph_coords_file, index=False)
-        print(f"Saved Morphology {method.upper()} coordinates to: {morph_coords_file}")
-    
-    # Create color mapping for celltypes
+    # Create color mapping for celltypes using the new function
     if labels is not None:
         labels_truncated = labels[:n_cells]
         unique_labels = np.unique(labels_truncated)
         n_unique = len(unique_labels)
         
-        # Choose color mapping based on data type
-        if all(isinstance(label, (int, np.integer)) or str(label).isdigit() for label in unique_labels):
-            color_pairs = generate_color_pairs_for_simulation(unique_labels)
-            print(f"Using simulation color scheme (Red-Green-Blue)")
-            print(f"Clusters detected: {unique_labels}")
-        else:
-            color_pairs = generate_color_pairs_with_celltype_mapping(unique_labels)
-            print(f"Using cell type specific color scheme")
+        # Use the color mapping function with cell type specific colors
+        color_pairs = generate_color_pairs_with_celltype_mapping(unique_labels)
         
         print(f"Found {n_unique} unique labels: {unique_labels}")
+        print("Applied specific colors for known cell types:")
+        for label in unique_labels:
+            if label in ['CT', 'ET', 'IT', 'Lamp5', 'NP', 'Pvalb', 'Sncg', 'Sst', 'Vip', 'low quality']:
+                print(f"  {label}: {color_pairs[label]}")
     else:
         labels_truncated = None
         print("No labels found, using default colors")
 
-    # Plot Morphology only (lighter colors, triangles)
+    # Plot Morphology only (pastel filled circles)
     if outname1:
         fig, ax = plt.subplots(figsize=(10, 8))
         if labels_truncated is not None:
@@ -1201,26 +1129,24 @@ def plot_latent_visualization_with_celltype_colors(a, b, outname1=None, outname2
                 mask = labels_truncated == label
                 if np.any(mask):
                     morph_coords = comp[n_cells:][mask]  # morphology coordinates
-                    light_color, _ = color_pairs[label]  # light color for morphology
+                    pastel_color, _ = color_pairs[label]
                     ax.scatter(morph_coords[:, 0], morph_coords[:, 1], 
-                             c=light_color, s=100, marker='^',  # Triangles for morphology
-                             alpha=0.8, edgecolors='black', linewidth=0.5,
-                             label=f'Cluster {label}')
+                             c=pastel_color, s=60, marker='o',
+                             alpha=0.7, edgecolors='none', 
+                             label=f'{label}')
         else:
-            ax.scatter(comp[n_cells:, 0], comp[n_cells:, 1], s=100, marker='^',
-                     c='lightblue', alpha=0.7, edgecolors='black', linewidth=0.5,
+            ax.scatter(comp[n_cells:, 0], comp[n_cells:, 1], s=60, marker='o',
+                     c='lightblue', alpha=0.7, edgecolors='none', 
                      label='Morphology')
         
-        ax.set_xlabel(f"{method.upper()} 1", fontsize=14)
-        ax.set_ylabel(f"{method.upper()} 2", fontsize=14)
-        ax.set_title(f"Morphology Embedding ({method.upper()})", fontsize=16, fontweight='bold')
-        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=12)
-        plt.tight_layout()
+        ax.set_xlabel(f"{method.upper()} 1")
+        ax.set_ylabel(f"{method.upper()} 2")
+        ax.set_title(f"Morphology Embedding ({method.upper()})")
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.savefig(outname1, dpi=300, bbox_inches='tight')
         plt.close()
-        print(f"Saved morphology plot to: {outname1}")
 
-    # Plot Gene Expression only (darker colors, circles)
+    # Plot Gene Expression only (solid empty shapes)
     if outname2:
         fig, ax = plt.subplots(figsize=(10, 8))
         if labels_truncated is not None:
@@ -1228,24 +1154,22 @@ def plot_latent_visualization_with_celltype_colors(a, b, outname1=None, outname2
                 mask = labels_truncated == label
                 if np.any(mask):
                     gene_coords = comp[:n_cells][mask]  # gene expression coordinates
-                    _, dark_color = color_pairs[label]  # dark color for GEX
+                    _, solid_color = color_pairs[label]
                     ax.scatter(gene_coords[:, 0], gene_coords[:, 1], 
-                             c=dark_color, s=100, marker='o',  # Circles for GEX
-                             alpha=0.8, edgecolors='black', linewidth=0.5,
-                             label=f'Cluster {label}')
+                             s=60, marker='^',
+                             facecolors='none', edgecolors=solid_color, 
+                             linewidth=2, alpha=0.8, label=f'{label}')
         else:
-            ax.scatter(comp[:n_cells, 0], comp[:n_cells, 1], s=100, marker='o',
-                     c='darkorange', alpha=0.8, edgecolors='black', linewidth=0.5,
-                     label='Gene Expression')
+            ax.scatter(comp[:n_cells, 0], comp[:n_cells, 1], s=60, marker='^',
+                     facecolors='none', edgecolors='darkorange', 
+                     linewidth=2, alpha=0.8, label='Gene Expression')
         
-        ax.set_xlabel(f"{method.upper()} 1", fontsize=14)
-        ax.set_ylabel(f"{method.upper()} 2", fontsize=14)
-        ax.set_title(f"Gene Expression ({method.upper()})", fontsize=16, fontweight='bold')
-        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=12)
-        plt.tight_layout()
+        ax.set_xlabel(f"{method.upper()} 1")
+        ax.set_ylabel(f"{method.upper()} 2")
+        ax.set_title(f"Gene Expression ({method.upper()})")
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.savefig(outname2, dpi=300, bbox_inches='tight')
         plt.close()
-        print(f"Saved gene expression plot to: {outname2}")
 
     # Plot both modalities together
     if outname:
@@ -1254,54 +1178,44 @@ def plot_latent_visualization_with_celltype_colors(a, b, outname1=None, outname2
             for label in unique_labels:
                 mask = labels_truncated == label
                 if np.any(mask):
-                    light_color, dark_color = color_pairs[label]
+                    pastel_color, solid_color = color_pairs[label]
                     
-                    # Morphology (lighter colors, triangles)
+                    # Morphology (pastel filled circles)
                     morph_coords = comp[n_cells:][mask]
                     ax.scatter(morph_coords[:, 0], morph_coords[:, 1], 
-                             c=light_color, s=100, marker='^',
-                             alpha=0.8, edgecolors='black', linewidth=0.5,
-                             label=f'Cluster {label} (Morphology)')
+                             c=pastel_color, s=60, marker='o',
+                             alpha=0.7, edgecolors='none', 
+                             label=f'{label} (Morphology)')
                     
-                    # Gene Expression (darker colors, circles)
+                    # Gene Expression (solid empty triangles)
                     gene_coords = comp[:n_cells][mask]
                     ax.scatter(gene_coords[:, 0], gene_coords[:, 1], 
-                             c=dark_color, s=100, marker='o',
-                             alpha=0.8, edgecolors='black', linewidth=0.5,
-                             label=f'Cluster {label} (Gene Expression)')
+                             s=60, marker='^',
+                             facecolors='none', edgecolors=solid_color, 
+                             linewidth=2, alpha=0.8, 
+                             label=f'{label} (Gene Expression)')
         else:
             # Fallback without labels
-            ax.scatter(comp[n_cells:, 0], comp[n_cells:, 1], s=100, marker='^',
-                     c='lightblue', alpha=0.7, edgecolors='black', linewidth=0.5,
+            ax.scatter(comp[n_cells:, 0], comp[n_cells:, 1], s=60, marker='o',
+                     c='lightblue', alpha=0.7, edgecolors='none', 
                      label='Morphology')
-            ax.scatter(comp[:n_cells, 0], comp[:n_cells, 1], s=100, marker='o',
-                     c='darkorange', alpha=0.8, edgecolors='black', linewidth=0.5,
-                     label='Gene Expression')
+            ax.scatter(comp[:n_cells, 0], comp[:n_cells, 1], s=60, marker='^',
+                     facecolors='none', edgecolors='darkorange', 
+                     linewidth=2, alpha=0.8, label='Gene Expression')
         
-        ax.set_xlabel(f"{method.upper()} 1", fontsize=14)
-        ax.set_ylabel(f"{method.upper()} 2", fontsize=14)  
-        ax.set_title(f"Combined Morphology and Gene Expression ({method.upper()})", fontsize=16, fontweight='bold')
-        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=10)
-        plt.tight_layout()
+        ax.set_xlabel(f"{method.upper()} 1")
+        ax.set_ylabel(f"{method.upper()} 2")  
+        ax.set_title(f"Combined Morphology and Gene Expression ({method.upper()})")
+        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         plt.savefig(outname, dpi=300, bbox_inches='tight')
         plt.close()
-        print(f"Saved combined plot to: {outname}")
 
         
 
 # Update the save_plots function to use the new visualization
-def save_plots_with_celltype_colors(trainer, data_a, data_b, directory, suffix, config=None, dataset=None):
+def save_plots_with_celltype_colors(trainer, data_a, data_b, directory, suffix, config=None):
     """
-    Save plots function with cell type specific colors or simulation colors
-    
-    Args:
-        trainer: Trainer object
-        data_a: Morphology data
-        data_b: Gene expression data
-        directory: Output directory
-        suffix: File suffix (e.g., iteration number or 'final')
-        config: Configuration dictionary
-        dataset: Dataset object (for simulation data with cluster labels)
+    Save plots function with cell type specific colors
     """
     latent_a = trainer.gen_a.enc(data_a).data.cpu().numpy()
     latent_b = trainer.gen_b.enc(data_b).data.cpu().numpy()
@@ -1328,6 +1242,5 @@ def save_plots_with_celltype_colors(trainer, data_a, data_b, directory, suffix, 
         outname2=os.path.join(directory, f"_gene_expression_{suffix}.png"), 
         outname=os.path.join(directory, f"_combined_{suffix}.png"),
         method=method,
-        umap_params=umap_params,
-        dataset=dataset  # Pass dataset for cluster labels
+        umap_params=umap_params
     )

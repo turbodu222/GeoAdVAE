@@ -4,8 +4,8 @@
 # Training schedule and logging - reduced for simulation
 snapshot_save_iter: 100         # More frequent saves for quick iterations
 log_iter: 25                    # Frequent logging to monitor small model
-max_iter: 2000                  # Reduced iterations for simulation
-batch_size: 150                  # Smaller batch size for simulation
+max_iter: 1000                  # Reduced iterations for simulation
+batch_size: 16                  # Smaller batch size for simulation
 log_data: True
 normalize_data: True
 
@@ -37,24 +37,24 @@ step_size: 400                  # More frequent LR decay
 gamma: 0.5                      # More aggressive decay
 
 # Loss weights - rebalanced for small simulation data
-gan_w: 10                      # Reduced GAN weight to prevent instability
-recon_x_w: 5                # High reconstruction weight for stability
-gw_w: 3                      # Reduced GW weight for simple data
+gan_w: 20                      # Reduced GAN weight to prevent instability
+recon_x_w: 3                 # High reconstruction weight for stability
+gw_w: 0.1                       # Reduced GW weight for simple data
 kl_w: 0.1                     # Very small KL weight to prevent collapse
-lambda_p: 21                  # Moderate prior loss weight
+lambda_p: 2                   # Moderate prior loss weight
 debug_gan_training: True
 
 # Training frequency control - more conservative for small model
-num_disc: 2                     # Single discriminator update per generator
+num_disc: 1                     # Single discriminator update per generator
 num_gen: 1                      # Single generator update
 
 # Prior information configuration - adapted for simulation
-prior_matrix_path: "FILEPATHTO/Corr_matrix.csv"  # Update this path
+prior_matrix_path: "~/kzlinlab/projects/morpho_integration/out/turbo/Simulation/v4/Corr_matrix.csv"  # Update this path
 epsilon: 1e-6                   
 n_gene_clusters: 3              # Reduced for simulation
 n_morphology_clusters: 3        # Reduced for simulation  
 prior_temperature: 0.1          # Higher temperature for softer alignment
-prior_loss_warmup: 20           # Shorter warmup
+prior_loss_warmup: 50           # Shorter warmup
 
 # Visualization configuration 
 visualization:
@@ -64,23 +64,23 @@ visualization:
   umap_metric: 'euclidean'
   
 # Gromov-Wasserstein loss configuration 
-gw_mode: 'Global'            # Groupwise better for small batches
-gw_group_size: 32                # Small group size for simulation
+gw_mode: 'Groupwise'            # Groupwise better for small batches
+gw_group_size: 8                # Small group size for simulation
 
 # Simplified model architecture - much smaller networks
 shared_layer: True
 gen:
-  dim: 3
-  latent: 2
+  dim: 64
+  latent: 8
   activ: relu
 
 dis:
-  dim: 3
+  dim: 64
   norm: none
   activ: lrelu
   use_sigmoid: True         
   gan_type: 'lsgan'           # GAN type: 'lsgan', 'nsgan', or 'wgan'
   label_smoothing: 0.1        # Prevent overfitting by smoothing labels
 
-input_dim_a: 1200
-input_dim_b: 3
+input_dim_a: 1000
+input_dim_b: 5

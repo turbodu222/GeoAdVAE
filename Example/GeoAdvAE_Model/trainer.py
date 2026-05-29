@@ -1,3 +1,7 @@
+"""
+Trainer class for model training with configurable loss scheduling.
+This code is based on https://github.com/NVlabs/MUNIT.
+"""
 from networks import Discriminator
 from networks import VAEGen_MORE_LAYERS as VAEGen
 from utils import weights_init, get_model_list, get_scheduler
@@ -252,65 +256,74 @@ class Trainer(nn.Module):
 
     def compute_improved_prior_loss(self, z_a, z_b, batch_indices_a=None, batch_indices_b=None):
         """
-        Simplified contrastive prior loss for identity matrix
-        Pulls same-cluster pairs together, pushes different-cluster pairs apart
+        Improved prior loss computation using cosine similarity and temperature scaling
         """
         if not self.use_prior:
             return torch.tensor(0.0, device=z_a.device)
         
-        # Get cluster assignments
+        # Get current batch cluster assignments
         if batch_indices_a is not None and batch_indices_b is not None:
-            cluster_a = self.morpho_cluster_labels[batch_indices_a]
-            cluster_b = self.gex_cluster_labels[batch_indices_b]
+            cluster_a_np = self.morpho_cluster_labels[batch_indices_a]
+            cluster_b_np = self.gex_cluster_labels[batch_indices_b]
         else:
             batch_size_a = z_a.shape[0]
             batch_size_b = z_b.shape[0]
-            cluster_a = self.morpho_cluster_labels[:batch_size_a]
-            cluster_b = self.gex_cluster_labels[:batch_size_b]
+            cluster_a_np = self.morpho_cluster_labels[:batch_size_a]
+            cluster_b_np = self.gex_cluster_labels[:batch_size_b]
         
-        # L2 normalize
+        cluster_a_np = np.asarray(cluster_a_np, dtype=np.int32)
+        cluster_b_np = np.asarray(cluster_b_np, dtype=np.int32)
+        
+        # L2 normalize latent representations
         z_a_norm = F.normalize(z_a, p=2, dim=1)
         z_b_norm = F.normalize(z_b, p=2, dim=1)
         
-        # Compute similarity matrix (cosine similarity)
-        similarity_matrix = torch.mm(z_a_norm, z_b_norm.t()) / self.prior_temperature
+        # Compute cosine similarity matrix
+        similarity_matrix = torch.mm(z_a_norm, z_b_norm.t())  # [batch_a, batch_b]
         
-        # Create mask for same-cluster pairs (positive pairs)
-        cluster_a = torch.from_numpy(cluster_a).long().to(z_a.device)
-        cluster_b = torch.from_numpy(cluster_b).long().to(z_a.device)
+        # Build target similarity matrix from prior correlations
+        n_a, n_b = len(cluster_a_np), len(cluster_b_np)
+        target_similarity = torch.zeros((n_a, n_b), device=z_a.device)
         
-        # Broadcasting: cluster_a[:, None] vs cluster_b[None, :]
-        positive_mask = (cluster_a[:, None] == cluster_b[None, :]).float()
+        prior_matrix_np = self.prior_correlation_matrix.detach().cpu().numpy()
         
-        # InfoNCE-style contrastive loss
-        # For each sample in z_a, we want high similarity with same-cluster z_b
-        exp_sim = torch.exp(similarity_matrix)
+        try:
+            for i in range(n_a):
+                for j in range(n_b):
+                    cluster_i = int(cluster_a_np[i])  # morphology cluster
+                    cluster_j = int(cluster_b_np[j])  # gene expression cluster
+                    
+                    if (cluster_j < prior_matrix_np.shape[0] and 
+                        cluster_i < prior_matrix_np.shape[1] and
+                        cluster_j >= 0 and cluster_i >= 0):
+                        target_similarity[i, j] = float(prior_matrix_np[cluster_j, cluster_i])
+                    else:
+                        target_similarity[i, j] = 0.0
+        except Exception as e:
+            print(f"Error in target similarity computation: {e}")
+            return torch.tensor(0.0, device=z_a.device)
         
-        # Positive pairs: same cluster
-        positive_sim = torch.sum(exp_sim * positive_mask, dim=1)
+        # Apply temperature scaling
+        similarity_matrix_scaled = similarity_matrix / self.prior_temperature
+        target_similarity_scaled = target_similarity / self.prior_temperature
         
-        # All pairs (including positives and negatives)
-        all_sim = torch.sum(exp_sim, dim=1)
+        # MSE loss between predicted and target similarities
+        prior_loss = F.mse_loss(similarity_matrix_scaled, target_similarity_scaled)
         
-        # Loss: -log(positive / all)
-        loss = -torch.log(positive_sim / (all_sim + 1e-8) + 1e-8).mean()
-        
-        # Warmup (optional, but helps stability)
+        # Warmup strategy - gradually increase prior loss weight
         if self.current_iteration < self.prior_loss_warmup:
-            warmup_factor = 0.5 + 0.5 * (self.current_iteration / self.prior_loss_warmup)
-            loss = loss * warmup_factor
+            warmup_factor = self.current_iteration / self.prior_loss_warmup
+            prior_loss = prior_loss * warmup_factor
         
         # Debug output
         if self.current_iteration % 100 == 0:
-            n_positive = positive_mask.sum().item()
-            n_total = positive_mask.numel()
-            print(f"Prior loss (iter {self.current_iteration}):")
-            print(f"  Loss: {loss.item():.4f}")
-            print(f"  Positive pairs: {n_positive}/{n_total}")
-            print(f"  Avg similarity (same cluster): {(similarity_matrix * positive_mask).sum() / (n_positive + 1e-8):.4f}")
-            print(f"  Avg similarity (diff cluster): {(similarity_matrix * (1 - positive_mask)).sum() / (n_total - n_positive + 1e-8):.4f}")
+            print(f"Prior loss debug - iteration {self.current_iteration}:")
+            print(f"  Similarity range: {similarity_matrix.min():.3f} to {similarity_matrix.max():.3f}")
+            print(f"  Target range: {target_similarity.min():.3f} to {target_similarity.max():.3f}")
+            print(f"  Prior loss value: {prior_loss.item():.6f}")
+            print(f"  Warmup factor: {warmup_factor if self.current_iteration < self.prior_loss_warmup else 1.0:.3f}")
         
-        return loss
+        return prior_loss
 
 
     def compute_prior_loss(self, z_a, z_b, batch_indices_a=None, batch_indices_b=None):
@@ -637,7 +650,7 @@ class Trainer(nn.Module):
             self._verify_weights_unchanged(self.dis_latent, "Discriminator", disc_before, "generator update")
         
         # Run comprehensive freeze verification
-        #self._debug_freeze_verification(self.current_iteration)
+        self._debug_freeze_verification(self.current_iteration)
 
         # Store scalar attributes for TensorBoard
         self.loss_scalar_kl = kl_loss.item()

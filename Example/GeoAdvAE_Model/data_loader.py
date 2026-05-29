@@ -3,42 +3,18 @@ import torch.utils.data as utils
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-import os
 
 class CrossModalDataset(torch.utils.data.Dataset):
     """
     Unified dataset class that loads and manages all cross-modal data
     """
     def __init__(self, 
-                 morphology_path=None,
-                 gene_expression_path=None,
-                 rna_family_path=None,
-                 morpho_cluster_path=None,
-                 gex_cluster_path=None,
-                 prior_matrix_path=None):
-        
-        # Read paths from environment variables (required)
-        morphology_path = morphology_path or os.environ.get('MORPHOLOGY_PATH')
-        gene_expression_path = gene_expression_path or os.environ.get('GENE_EXPRESSION_PATH')
-        rna_family_path = rna_family_path or os.environ.get('RNA_FAMILY_PATH')
-        morpho_cluster_path = morpho_cluster_path or os.environ.get('MORPHO_CLUSTER_PATH')
-        gex_cluster_path = gex_cluster_path or os.environ.get('GEX_CLUSTER_PATH')
-        prior_matrix_path = prior_matrix_path or os.environ.get('PRIOR_MATRIX_PATH')
-        
-        # Check all paths are provided
-        required_paths = {
-            'MORPHOLOGY_PATH': morphology_path,
-            'GENE_EXPRESSION_PATH': gene_expression_path,
-            'RNA_FAMILY_PATH': rna_family_path,
-            'MORPHO_CLUSTER_PATH': morpho_cluster_path,
-            'GEX_CLUSTER_PATH': gex_cluster_path,
-            'PRIOR_MATRIX_PATH': prior_matrix_path
-        }
-        
-        missing = [name for name, path in required_paths.items() if path is None]
-        if missing:
-            raise ValueError(f"Missing required data paths: {', '.join(missing)}. "
-                           f"Please set these environment variables before running.")
+                 morphology_path="/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/Simulation/v6/gw_dist.csv",
+                 gene_expression_path="/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/Simulation/v6/gene_expression.csv",
+                 rna_family_path="/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/Simulation/v6/rna_family.csv",
+                 morpho_cluster_path="/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/Simulation/v6/cluster_label.csv",
+                 gex_cluster_path="/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/Simulation/v6/cluster_label.csv",
+                 prior_matrix_path="/home/users/turbodu/kzlinlab/projects/morpho_integration/out/turbo/Simulation/v6/Corr_matrix.csv"):
         
         print("Loading cross-modal dataset...")
         
@@ -138,28 +114,20 @@ class CrossModalDataset(torch.utils.data.Dataset):
         
         print("Dataset initialization completed successfully!")
         self._verify_data_integrity()
-
-        # Convert to 0-based indexing
-        self.morpho_cluster_labels = self.morpho_cluster_labels - 1
-        self.gex_cluster_labels = self.gex_cluster_labels - 1
-
-        print("\n=== Converted to 0-based ===")
-        print(f"GEX clusters after conversion: {torch.unique(self.gex_cluster_labels).tolist()}")
-        print(f"Morpho clusters after conversion: {torch.unique(self.morpho_cluster_labels).tolist()}")
     
     def _convert_to_numeric(self, labels):
-        """Convert string labels to numeric format"""
+        """Convert string labels to 0-indexed numeric format (cluster1->0, cluster2->1, cluster3->2)"""
         numeric_labels = []
         for label in labels:
             if isinstance(label, str):
                 import re
                 numbers = re.findall(r'\d+', str(label))
                 if numbers:
-                    numeric_labels.append(int(numbers[0]))
+                    numeric_labels.append(int(numbers[0]) - 1)
                 else:
                     numeric_labels.append(0)
             else:
-                numeric_labels.append(int(label))
+                numeric_labels.append(int(label) - 1)
         return np.array(numeric_labels, dtype=np.int32)
     
     def _verify_data_integrity(self):
@@ -197,19 +165,14 @@ class CrossModalDataset(torch.utils.data.Dataset):
         """
         Returns a sample containing all modalities and labels
         """
-        item = {
+        return {
             'morpho_data': self.morpho_data[idx],
             'gex_data': self.gex_data[idx],
             'morpho_cluster': self.morpho_cluster_labels[idx],
             'gex_cluster': self.gex_cluster_labels[idx],
-            'index': idx
+            'index': idx,
+            'rna_family': self.rna_family_labels[idx] if self.rna_family_labels is not None else None
         }
-        
-        # Only add rna_family if it exists (avoid None in batch)
-        if self.rna_family_labels is not None:
-            item['rna_family'] = self.rna_family_labels[idx]
-        
-        return item
     
     def get_full_data(self, device='cuda'):
         """Get all data as tensors for full-batch operations"""
